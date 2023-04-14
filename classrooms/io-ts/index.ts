@@ -1,9 +1,9 @@
-import {Buffer} from 'node:buffer';
-import assert from 'node:assert';
-import test from 'ava';
-import * as io from 'io-ts';
-import {pipe} from 'fp-ts/lib/function';
-import {decode, encode} from './util.js';
+import { Buffer } from "node:buffer";
+import assert from "node:assert";
+import test from "ava";
+import * as io from "io-ts";
+import { pipe } from "fp-ts/lib/function";
+import { decode, encode } from "./util.js";
 
 /*
  * # Introduction to io-ts
@@ -18,16 +18,16 @@ import {decode, encode} from './util.js';
 const unsafeProcessComplexObject = (object: unknown): number => {
   // We have to check the type of the value before we can use it.
   if (
-    typeof object === 'object' &&
+    typeof object === "object" &&
     object !== null &&
-    'property' in object &&
-    typeof object.property === 'number'
+    "property" in object &&
+    typeof object.property === "number"
   ) {
     return object.property;
   }
 
   // And throw an error if the type is wrong.
-  throw new TypeError('Invalid object');
+  throw new TypeError("Invalid object");
 };
 
 /*
@@ -35,7 +35,7 @@ const unsafeProcessComplexObject = (object: unknown): number => {
  * help us to constrain the type of the value before we use it.
  */
 
-const typedProcessComplexObject = (object: {value: number}): number =>
+const typedProcessComplexObject = (object: { value: number }): number =>
   object.value;
 
 /*
@@ -43,26 +43,31 @@ const typedProcessComplexObject = (object: {value: number}): number =>
  * value if it is a User object.
  */
 
-type User = {name: string; age: number};
+type User = { name: string; age: number };
 const unsafeParseUser = (json: string): User => {
   const object: unknown = JSON.parse(json);
-  if ('age' in object && typeof object.age === 'number' && 'name' in object && typeof object.name === 'string') {
-    const {age, name} = object;
-    return {age, name};
+  if (
+    "age" in object &&
+    typeof object.age === "number" &&
+    "name" in object &&
+    typeof object.name === "string"
+  ) {
+    const { age, name } = object;
+    return { age, name };
   }
 
-  throw new TypeError('Invalid object');
+  throw new TypeError("Invalid object");
 };
 
-test('unsafeParseUser', (t) => {
-  const USER = {name: 'John', age: 42};
+test("unsafeParseUser", (t) => {
+  const USER = { name: "John", age: 42 };
   t.deepEqual(unsafeParseUser(JSON.stringify(USER)), USER);
 
-  const INVALID_OBJECTS: unknown[] = [{name: 'John'}, {age: 42}];
+  const INVALID_OBJECTS: unknown[] = [{ name: "John" }, { age: 42 }];
   INVALID_OBJECTS.forEach((object) =>
     t.throws(() => unsafeParseUser(JSON.stringify(object)), {
       instanceOf: TypeError,
-    }),
+    })
   );
 });
 
@@ -82,7 +87,7 @@ const parseUser = (json: string): User => pipe(json, JSON.parse, decode(User));
  */
 
 type ComplexObject = {
-  falsyValue: null | undefined | false | 0 | '';
+  falsyValue: null | undefined | false | 0 | "";
   arrayOfTuples?: Array<[number, string]>;
 };
 
@@ -90,28 +95,32 @@ type ComplexObject = {
 const ComplexObject: io.Type<ComplexObject> = io.intersection([
   io.type({
     falsyValue: io.union([
-      io.null, io.undefined, io.literal(false), io.literal(0), io.literal('') 
-    ])
+      io.null,
+      io.undefined,
+      io.literal(false),
+      io.literal(0),
+      io.literal(""),
+    ]),
   }),
   io.partial({
-    arrayOfTuples: io.array(io.tuple(io.number, io.string))
-  })
+    arrayOfTuples: io.array(io.tuple(io.number, io.string)),
+  }),
 ]);
 
-test('ComplexObject', (t) => {
+test("ComplexObject", (t) => {
   const VALID_OBJECTS = [
-    {falsyValue: null},
-    {falsyValue: undefined},
-    {falsyValue: false},
-    {falsyValue: 0},
-    {falsyValue: ''},
-    {falsyValue: null, arrayOfTuples: []},
-    {falsyValue: null, arrayOfTuples: [[1, 'a']]},
+    { falsyValue: null },
+    { falsyValue: undefined },
+    { falsyValue: false },
+    { falsyValue: 0 },
+    { falsyValue: "" },
+    { falsyValue: null, arrayOfTuples: [] },
+    { falsyValue: null, arrayOfTuples: [[1, "a"]] },
     {
       falsyValue: null,
       arrayOfTuples: [
-        [1, 'a'],
-        [2, 'b'],
+        [1, "a"],
+        [2, "b"],
       ],
     },
   ];
@@ -122,13 +131,13 @@ test('ComplexObject', (t) => {
   });
 
   const INVALID_OBJECTS = [
-    {falsyValue: true},
-    {falsyValue: 1},
-    {falsyValue: 'foo'},
-    {falsyValue: null, arrayOfTuples: [1, 'a']},
+    { falsyValue: true },
+    { falsyValue: 1 },
+    { falsyValue: "foo" },
+    { falsyValue: null, arrayOfTuples: [1, "a"] },
   ];
   INVALID_OBJECTS.forEach((object) => {
-    t.throws(() => decode(ComplexObject)(object), {instanceOf: TypeError});
+    t.throws(() => decode(ComplexObject)(object), { instanceOf: TypeError });
   });
 });
 
@@ -151,7 +160,7 @@ const unsafeDivide = (dividend: number, divisor: number): number =>
  */
 
 // This is a way how we define a phantom type
-type NonZeroFinite = number & {readonly NonZeroFinite: symbol};
+type NonZeroFinite = number & { readonly NonZeroFinite: symbol };
 
 // To create a value of this type, we have to use a smart constructor
 const NonZeroFinite = (n: number): NonZeroFinite => {
@@ -179,8 +188,8 @@ assert.throws(() => divide(1, NonZeroFinite(0)), TypeError);
  * Io-ts provides us a way to define a phantom type and a smart constructor.
  */
 
-type Positive = io.Branded<number, {readonly Positive: symbol}>;
-const Positive = io.brand(io.number, (n): n is Positive => n >= 0, 'Positive');
+type Positive = io.Branded<number, { readonly Positive: symbol }>;
+const Positive = io.brand(io.number, (n): n is Positive => n >= 0, "Positive");
 
 const sqrt = (n: Positive): number => Math.sqrt(n);
 
@@ -193,18 +202,18 @@ sqrt(decode(Positive)(4));
  */
 
 // TODO write the Palindrome branded type$
-type Palindrome = io.Branded<string, {readonly Palindrome: symbol}>;
+type Palindrome = io.Branded<string, { readonly Palindrome: symbol }>;
 const Palindrome = io.brand(
   io.string,
-  (s): s is Palindrome => s.split('').reverse().join('') === s,
-  'Palindrome'
+  (s): s is Palindrome => s.split("").reverse().join("") === s,
+  "Palindrome"
 );
 
-test('Palindrome', (t) => {
-  const VALID_PALINDROMES = ['racecar', 'level', 'noon'];
+test("Palindrome", (t) => {
+  const VALID_PALINDROMES = ["racecar", "level", "noon"];
   VALID_PALINDROMES.forEach((s) => t.true(Palindrome.is(s)));
 
-  const INVALID_PALINDROMES = ['hello', 'world', 'foo'];
+  const INVALID_PALINDROMES = ["hello", "world", "foo"];
   INVALID_PALINDROMES.forEach((s) => t.false(Palindrome.is(s)));
 });
 
@@ -215,26 +224,26 @@ test('Palindrome', (t) => {
  * call it a generic type.
  */
 
-type Either<A, B> = {type: 'left'; value: A} | {type: 'right'; value: B};
+type Either<A, B> = { type: "left"; value: A } | { type: "right"; value: B };
 const Either = <A, B>(A: io.Type<A>, B: io.Type<B>) =>
   io.union([
-    io.type({type: io.literal('left'), value: A}),
-    io.type({type: io.literal('right'), value: B}),
+    io.type({ type: io.literal("left"), value: A }),
+    io.type({ type: io.literal("right"), value: B }),
   ]);
 
 const NumberOrString = Either(io.number, io.string);
 
 const VALID_NUMBER_OR_STRING = [
-  {type: 'left', value: 1},
-  {type: 'right', value: 'foo'},
+  { type: "left", value: 1 },
+  { type: "right", value: "foo" },
 ];
 VALID_NUMBER_OR_STRING.forEach((v) => {
   assert.doesNotThrow(() => decode(NumberOrString)(v));
 });
 
 const INVALID_NUMBER_OR_STRING = [
-  {type: 'right', value: 1},
-  {type: 'left', value: 'foo'},
+  { type: "right", value: 1 },
+  { type: "left", value: "foo" },
 ];
 INVALID_NUMBER_OR_STRING.forEach((v) => {
   assert.throws(() => decode(NumberOrString)(v));
@@ -244,18 +253,18 @@ INVALID_NUMBER_OR_STRING.forEach((v) => {
  * Exercice 4: Write the io-ts type to represent the following type.
  */
 
-type Result<Status, Body> = {status: Status; body: Body};
+type Result<Status, Body> = { status: Status; body: Body };
 type CustomResult =
   | Result<200, string>
-  | Result<401, 'Unauthorized'>
-  | Result<403, 'Forbidden'>
-  | Result<404, 'Not found'>
-  | Result<500, 'Internal server error'>;
+  | Result<401, "Unauthorized">
+  | Result<403, "Forbidden">
+  | Result<404, "Not found">
+  | Result<500, "Internal server error">;
 
 // TODO write the Result type
 const Result = <Status, Body>(
   status: io.Type<Status>,
-  body: io.Type<Body>,
+  body: io.Type<Body>
 ): io.Type<Result<Status, Body>> =>
   io.union([
     io.type({
@@ -264,51 +273,51 @@ const Result = <Status, Body>(
     }),
     io.type({
       status: io.literal(401),
-      body: io.literal('Unauthorized'),
+      body: io.literal("Unauthorized"),
     }),
     io.type({
       status: io.literal(403),
-      body: io.literal('Forbidden'),
-    }),  
+      body: io.literal("Forbidden"),
+    }),
     io.type({
       status: io.literal(404),
-      body: io.literal('Not found'),
+      body: io.literal("Not found"),
     }),
     io.type({
       status: io.literal(500),
-      body: io.literal('Internal server error'),
-    })
+      body: io.literal("Internal server error"),
+    }),
   ]);
 
 const CustomResult: io.Type<CustomResult> = io.union([
   Result(io.literal(200), io.string),
-  Result(io.literal(401), io.literal('Unauthorized')),
-  Result(io.literal(403), io.literal('Forbidden')),
-  Result(io.literal(404), io.literal('Not found')),
-  Result(io.literal(500), io.literal('Internal server error')),
+  Result(io.literal(401), io.literal("Unauthorized")),
+  Result(io.literal(403), io.literal("Forbidden")),
+  Result(io.literal(404), io.literal("Not found")),
+  Result(io.literal(500), io.literal("Internal server error")),
 ]);
 
-test('CustomResult', (t) => {
+test("CustomResult", (t) => {
   const VALID_CUSTOM_RESULTS = [
-    {status: 200, body: 'Hello world'},
-    {status: 401, body: 'Unauthorized'},
-    {status: 403, body: 'Forbidden'},
-    {status: 404, body: 'Not found'},
-    {status: 500, body: 'Internal server error'},
+    { status: 200, body: "Hello world" },
+    { status: 401, body: "Unauthorized" },
+    { status: 403, body: "Forbidden" },
+    { status: 404, body: "Not found" },
+    { status: 500, body: "Internal server error" },
   ];
   VALID_CUSTOM_RESULTS.forEach((v) => {
     t.notThrows(() => decode(CustomResult)(v));
   });
 
   const INVALID_CUSTOM_RESULTS = [
-    {status: 200, body: 1},
-    {status: 401, body: 'Hello world'},
-    {status: 403, body: 1},
-    {status: 404, body: 1},
-    {status: 500, body: 1},
+    { status: 200, body: 1 },
+    { status: 401, body: "Hello world" },
+    { status: 403, body: 1 },
+    { status: 404, body: 1 },
+    { status: 500, body: 1 },
   ];
   INVALID_CUSTOM_RESULTS.forEach((v) =>
-    t.throws(() => decode(CustomResult)(v), {instanceOf: TypeError}),
+    t.throws(() => decode(CustomResult)(v), { instanceOf: TypeError })
   );
 });
 
@@ -329,10 +338,10 @@ io.string satisfies io.Type<string, string, unknown>;
  */
 
 const DateType = new io.Type<Date, string, number>(
-  'Date',
+  "Date",
   (u): u is Date => u instanceof Date,
   (u, c) => (Number.isFinite(u) ? io.success(new Date(u)) : io.failure(u, c)),
-  (a): string => a.toISOString(),
+  (a): string => a.toISOString()
 );
 
 const timestampDate = 946_684_800_000;
@@ -350,24 +359,25 @@ const stringDate = encode(DateType)(date);
 
 // TODO write the StringToNumber type
 const StringToNumber = new io.Type<string, number, string>(
-  'StringToNumber',
+  "StringToNumber",
   (u): u is string => u instanceof string,
-  (u, c) => parseInt(u) !== NaN ? io.success(parseFloat(u, 16)) : io.failure(u, c),
+  (u, c) =>
+    parseInt(u) !== NaN ? io.success(parseFloat(u, 16)) : io.failure(u, c),
   (u): string => u.toString()
 );
 
-test('StringToNumber', (t) => {
+test("StringToNumber", (t) => {
   const VALID_NUMBERS: Array<[string, number, string]> = [
-    ['1', 1, '1'],
-    ['1.1', 1.1, '1.1'],
-    ['1e1', 10, '10'],
+    ["1", 1, "1"],
+    ["1.1", 1.1, "1.1"],
+    ["1e1", 10, "10"],
   ];
   VALID_NUMBERS.forEach(([input, value, output]) => {
     t.is(decode(StringToNumber)(input), value);
     t.is(encode(StringToNumber)(value), output);
   });
 
-  const INVALID_NUMBERS = ['foo', 'bar', 'baz'];
+  const INVALID_NUMBERS = ["foo", "bar", "baz"];
   INVALID_NUMBERS.forEach((input) => {
     t.is(decode(StringToNumber)(input), Number.NaN);
   });
@@ -380,7 +390,7 @@ test('StringToNumber', (t) => {
  */
 
 const FromJSON = new io.Type<unknown, string, string>(
-  'FromJSON',
+  "FromJSON",
   (u): u is unknown => true,
   (u, c) => {
     try {
@@ -389,7 +399,7 @@ const FromJSON = new io.Type<unknown, string, string>(
       return io.failure(u, c);
     }
   },
-  (a): string => JSON.stringify(a),
+  (a): string => JSON.stringify(a)
 );
 
 const Product = io.type({
@@ -407,25 +417,29 @@ const phoneString = encode(ProductFromJSON)(phone);
 
 // TODO write the ProductFromBase64JSON type
 const ProductFromBase64JSON = new io.Type<string, string, string>(
-  'FromBase64JSON',
+  "FromBase64JSON",
   (u): u is string => u instanceof string,
   (u, c): string => {
     try {
-      const decodedData = pipe(u, s => new Buffer(s, 'base64').toString('utf8'), JSON.parse);
+      const decodedData = pipe(
+        u,
+        (s) => new Buffer(s, "base64").toString("utf8"),
+        JSON.parse
+      );
       return io.success(decodedData);
     } catch (err) {
-      console.log({err});
+      console.log({ err });
       return io.failure(u, c);
     }
   },
-  (u): string =>  pipe(u, JSON.stringify, (s) => Buffer.from(s, 'utf8').toString('base64')),
+  (u): string =>
+    pipe(u, JSON.stringify, (s) => Buffer.from(s, "utf8").toString("base64"))
 );
 
-
-test('ProductFromBase64JSON', (t) => {
-  const book = {sku: 'book'};
+test("ProductFromBase64JSON", (t) => {
+  const book = { sku: "book" };
   const bookBase64 = pipe(book, JSON.stringify, (s) =>
-    Buffer.from(s, 'utf8').toString('base64'),
+    Buffer.from(s, "utf8").toString("base64")
   );
   t.deepEqual(decode(ProductFromBase64JSON)(bookBase64), book);
   t.is(encode(ProductFromBase64JSON)(book), bookBase64);
