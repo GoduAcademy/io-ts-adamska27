@@ -46,7 +46,7 @@ const typedProcessComplexObject = (object: {value: number}): number =>
 type User = {name: string; age: number};
 const unsafeParseUser = (json: string): User => {
   const object: unknown = JSON.parse(json);
-  if (false /* TODO write the type constraints */) {
+  if ('age' in object && typeof object.age === 'number' && 'name' in object && typeof object.name === 'string') {
     const {age, name} = object;
     return {age, name};
   }
@@ -87,7 +87,16 @@ type ComplexObject = {
 };
 
 // TODO write the io-ts type
-const ComplexObject: io.Type<ComplexObject> = io.never;
+const ComplexObject: io.Type<ComplexObject> = io.intersection([
+  io.type({
+    falsyValue: io.union([
+      io.null, io.undefined, io.literal(false), io.literal(0), io.literal('') 
+    ])
+  }),
+  io.partial({
+    arrayOfTuples: io.array(io.tuple(io.number, io.string))
+  })
+]);
 
 test('ComplexObject', (t) => {
   const VALID_OBJECTS = [
@@ -183,8 +192,13 @@ sqrt(decode(Positive)(4));
  * https://github.com/gcanti/io-ts/blob/master/index.md#implemented-types--combinators
  */
 
-// TODO write the Palindrome branded type
-const Palindrome = io.never;
+// TODO write the Palindrome branded type$
+type Palindrome = io.Branded<string, {readonly Palindrome: symbol}>;
+const Palindrome = io.brand(
+  io.string,
+  (s): s is Palindrome => s.split('').reverse().join('') === s,
+  'Palindrome'
+);
 
 test('Palindrome', (t) => {
   const VALID_PALINDROMES = ['racecar', 'level', 'noon'];
@@ -243,7 +257,28 @@ const Result = <Status, Body>(
   status: io.Type<Status>,
   body: io.Type<Body>,
 ): io.Type<Result<Status, Body>> =>
-  io.never;
+  io.union([
+    io.type({
+      status: io.literal(200),
+      body: io.string,
+    }),
+    io.type({
+      status: io.literal(401),
+      body: io.literal('Unauthorized'),
+    }),
+    io.type({
+      status: io.literal(403),
+      body: io.literal('Forbidden'),
+    }),  
+    io.type({
+      status: io.literal(404),
+      body: io.literal('Not found'),
+    }),
+    io.type({
+      status: io.literal(500),
+      body: io.literal('Internal server error'),
+    })
+  ]);
 
 const CustomResult: io.Type<CustomResult> = io.union([
   Result(io.literal(200), io.string),
@@ -314,7 +349,12 @@ const stringDate = encode(DateType)(date);
  */
 
 // TODO write the StringToNumber type
-const StringToNumber = io.never;
+const StringToNumber = new io.Type<string, number, string>(
+  'StringToNumber',
+  (u): u is string => u instanceof string,
+  (u, c) => parseInt(u) !== NaN ? io.success(parseFloat(u, 16)) : io.failure(u, c),
+  (u): string => u.toString()
+);
 
 test('StringToNumber', (t) => {
   const VALID_NUMBERS: Array<[string, number, string]> = [
@@ -366,7 +406,21 @@ const phoneString = encode(ProductFromJSON)(phone);
  */
 
 // TODO write the ProductFromBase64JSON type
-const ProductFromBase64JSON = io.never;
+const ProductFromBase64JSON = new io.Type<string, string, string>(
+  'FromBase64JSON',
+  (u): u is string => u instanceof string,
+  (u, c): string => {
+    try {
+      const decodedData = pipe(u, s => new Buffer(s, 'base64').toString('utf8'), JSON.parse);
+      return io.success(decodedData);
+    } catch (err) {
+      console.log({err});
+      return io.failure(u, c);
+    }
+  },
+  (u): string =>  pipe(u, JSON.stringify, (s) => Buffer.from(s, 'utf8').toString('base64')),
+);
+
 
 test('ProductFromBase64JSON', (t) => {
   const book = {sku: 'book'};
