@@ -47,6 +47,8 @@ type User = { name: string; age: number };
 const unsafeParseUser = (json: string): User => {
   const object: unknown = JSON.parse(json);
   if (
+    typeof object === "object" &&
+    object !== null &&
     "age" in object &&
     typeof object.age === "number" &&
     "name" in object &&
